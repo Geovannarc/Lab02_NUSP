@@ -1,5 +1,5 @@
-with fact_movies_country as (
-    select * from {{ source('movies_sources', 'fact_movies_country') }}
+with bridge_movie_production_country as (
+    select * from {{ source('movies_sources', 'bridge_movie_production_country') }}
 ),
 movies as (
     select * from {{ source('movies_sources', 'dim_movies') }}
@@ -9,7 +9,7 @@ country as (
 )
 
 select
-    fm.movie_id,
+    bg.movie_id,
     m.title,
     m.release_date,
     m.revenue,
@@ -18,8 +18,8 @@ select
     m.vote_average,
     m.vote_count,
     m.popularity,
-    fm.country_id,
+    bg.production_country_id,
     c.country_name
-from fact_movies_country fm
-join movies m on fm.movie_id = m.movie_id
-join country c on fm.country_id = c.country_id
+from bridge_movie_production_country bg
+join movies m on bg.movie_id = m.movie_id
+join country c on bg.production_country_id = c.production_country_id
