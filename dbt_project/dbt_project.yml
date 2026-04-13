@@ -1,0 +1,32 @@
+version: '1.0.0'
+name: 'dbt_project' # Nome do seu pacote (use o mesmo no profiles.yml se desejar)
+
+# O profile deve bater com o nome que está no seu ~/.dbt/profiles.yml
+profile: 'dbt_project'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# --- CONFIGURAÇÃO DE MODELOS ---
+# Aqui definimos as regras por pasta (Hierarquia de Pastas)
+models:
+  dbt_project: # Nome do projeto definido na linha 2
+    
+    # 1. Camada Staging: Quase sempre materializada como VIEW (Economia de custos)
+    staging:
+      +materialized: view
+      +schema: staging         # Cria automaticamente um sufixo _staging no seu banco
+    
+    # 2. Camada Marts: Tabelas Finais (Devem ser TABLE para performance de BI)
+    marts:
+      +materialized: table
+      +schema: gold       # Cria automaticamente um sufixo _gold
+      +tags: ["gold", "bi_ready"]

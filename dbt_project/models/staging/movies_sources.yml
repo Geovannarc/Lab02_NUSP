@@ -1,0 +1,134 @@
+version: 2
+
+sources:
+  - name: movies_sources
+    database: postgres
+    schema: public
+    description: "Camada Silver do sistema de avaliação de filmes."
+    
+    tables:
+      - name: dim_movies
+        description: "Dimensão para armazenar informações detalhadas sobre filmes, incluindo dados de staging e enriquecidos com informações de dimensões relacionadas."
+        columns: 
+          - name: movie_id
+            description: "Identificador único do filme."
+            tests:
+              - unique
+              - not_null
+          - name: title
+            description: "Título do filme."
+            tests:
+              - not_null
+          - name: release_date
+            description: "Data de lançamento do filme."
+          - name: revenue
+            description: "Receita total do filme em dólares."
+          - name: budget
+            description: "Orçamento total do filme em dólares."
+          - name: profit
+            description: "Lucro do filme, calculado como receita menos orçamento."
+          - name: vote_average
+            description: "Avaliação média do filme pelos usuários, em uma escala de 0 a 10."
+          - name: vote_count
+            description: "Número total de avaliações recebidas pelo filme."
+          - name: popularity
+            description: "Índice de popularidade do filme, calculado com base em diversos fatores como avaliações e receita."
+          - name: updated_at
+            description: "Data e hora da última atualização dos dados do filme."
+          - name: production_company_id
+            description: "Identificador da empresa de produção do filme, referenciando a dimensão de empresas de produção."
+          - name: production_country_id
+            description: "Identificador do país de produção do filme, referenciando a dimensão de países de produção."
+          
+      - name: dim_language
+        description: "Dimensão para armazenar informações sobre idiomas."
+        columns:
+          - name: id
+            description: "Identificador único do idioma."
+            tests:
+              - unique
+              - not_null
+          - name: language_code
+            description: "Código ISO 639-1 do idioma (ex: en, pt, es)."
+            tests:
+              - not_null
+
+      - name: dim_genre
+        description: "Dimensão para armazenar informações sobre gêneros de filmes."
+        columns:
+          - name: id
+            description: "Identificador único do gênero."
+            tests:
+              - not_null
+          - name: genre_name
+            description: "Nome do gênero."
+
+      - name: dim_production_company
+        description: "Dimensão para armazenar informações sobre empresas de produção de filmes."
+        columns:
+          - name: id
+            description: "Identificador único da empresa de produção."
+            tests:
+              - unique
+              - not_null
+          - name: company_name
+            description: "Nome da empresa de produção."
+            tests:
+              - not_null
+
+      - name: dim_production_country
+        description: "Dimensão para armazenar informações sobre países de produção de filmes."
+        columns:
+          - name: id
+            description: "Identificador único do país de produção."
+            tests:
+              - unique
+              - not_null
+          - name: country_name
+            description: "Nome do país de produção."
+            tests:
+              - not_null
+      - name: bridge_movie_genre
+        description: "Tabela de ponte para relacionar filmes e gêneros, permitindo um relacionamento muitos-para-muitos."
+        columns:
+          - name: movie_id
+            description: "Identificador do filme, referenciando a tabela de staging_movies."
+            tests:
+              - not_null
+          - name: genre_id
+            description: "Identificador do gênero, referenciando a tabela dim_genre."
+            tests:
+              - not_null
+      - name: bridge_movie_language
+        description: "Tabela de ponte para relacionar filmes e idiomas, permitindo um relacionamento muitos-para-muitos."
+        columns:
+          - name: movie_id
+            description: "Identificador do filme, referenciando a tabela de staging_movies."
+            tests:
+              - not_null
+          - name: language_id
+            description: "Identificador do idioma, referenciando a tabela dim_language."
+            tests:
+              - not_null
+      - name: bridge_movie_production_company
+        description: "Tabela de ponte para relacionar filmes e empresas de produção, permitindo um relacionamento muitos-para-muitos."
+        columns:
+          - name: movie_id
+            description: "Identificador do filme, referenciando a tabela de staging_movies."
+            tests:
+              - not_null
+          - name: production_company_id
+            description: "Identificador da empresa de produção, referenciando a tabela dim_production_company."
+            tests:
+              - not_null
+      - name: bridge_movie_production_country
+        description: "Tabela de ponte para relacionar filmes e países de produção, permitindo um relacionamento muitos-para-muitos."
+        columns:
+          - name: movie_id
+            description: "Identificador do filme, referenciando a tabela de staging_movies."
+            tests:
+              - not_null
+          - name: production_country_id
+            description: "Identificador do país de produção, referenciando a tabela dim_production_country."
+            tests:
+              - not_null

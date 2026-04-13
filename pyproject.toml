@@ -1,0 +1,14 @@
+[project]
+name = "lab02-nusp"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pandas",
+    "numpy",
+    "pyarrow",
+    "sqlalchemy",
+    "psycopg2-binary",
+    "tabulate",
+]
