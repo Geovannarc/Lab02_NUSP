@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS dim_production_country (
 );
 
 CREATE TABLE IF NOT EXISTS dim_movies (
-    movie_id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     title TEXT NOT NULL,
     release_date DATE,
     revenue NUMERIC,
@@ -28,8 +28,6 @@ CREATE TABLE IF NOT EXISTS dim_movies (
     vote_average NUMERIC,
     vote_count INT,
     popularity NUMERIC,
-    production_company_id INT REFERENCES dim_production_company(id),
-    production_country_id INT REFERENCES dim_production_country(id),
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

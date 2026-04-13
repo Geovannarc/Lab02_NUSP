@@ -32,5 +32,19 @@ services:
       RAW_OUTPUT_PATH: /app/worker
       DATABASE_URL: postgresql://postgres:postgres@db:5432/postgres
 
+  grafana:
+      image: grafana/grafana:latest
+      container_name: grafana
+      depends_on:
+        - db
+      ports:
+        - "3001:3000"
+      environment:
+        GRAFANA_USER: admin
+        GRAFANA_PASSWORD: admin
+      volumes:
+        - grafana_data:/var/lib/grafana
+      
 volumes:
   postgres_data:
+  grafana_data:

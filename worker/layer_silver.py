@@ -24,7 +24,6 @@ class SilverLayerProcessor:
         base_path = Path(os.getenv("RAW_OUTPUT_PATH", "/app"))
 
         raw_path = base_path / "data" / "raw"
-        silver_base = base_path / "data" / "silver"
 
         latest_partition = self._get_latest_partition(raw_path)
 
@@ -34,7 +33,6 @@ class SilverLayerProcessor:
 
         df = self._clean(df)
         df = self._transform(df)
-        self._profile(df)
 
         output_path = self.persist_silver(df)
 
@@ -81,110 +79,6 @@ class SilverLayerProcessor:
         df["adult"] = df["adult"].astype("boolean")
 
         return df
-
-    def _profile(self, df: pd.DataFrame):
-        self.logger.info("Gerando profiling estatístico avançado")
-
-        report_path = Path(os.getenv("RAW_OUTPUT_PATH", "/app")) / "data" / "silver" / "reports"
-        report_path.mkdir(parents=True, exist_ok=True)
-
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        total_rows = len(df)
-        nulls = df.isnull().sum()
-        null_pct = (nulls / total_rows * 100).round(2)
-
-        dq_table = pd.DataFrame({
-            "null_count": nulls,
-            "null_pct": null_pct
-        }).sort_values(by="null_pct", ascending=False)
-
-        numeric_df = df.select_dtypes(include="number")
-        numeric_stats = numeric_df.describe().T
-
-        numeric_stats["median"] = numeric_df.median()
-        numeric_stats["skew"] = numeric_df.skew()
-
-        cat_df = df.select_dtypes(include=["object", "string"])
-
-        top_categories = {}
-
-        exclude_cols = {
-            "title",
-            "original_title",
-            "overview",
-            "tagline",
-            "homepage",
-            "imdb_id",
-            "poster_path",
-            "backdrop_path"
-        }
-
-        for col in cat_df.columns:
-
-            if col in exclude_cols:
-                continue
-
-            series = df[col].dropna()
-
-            if series.empty:
-                continue
-
-            cardinality_ratio = series.nunique() / len(df)
-            if cardinality_ratio > 0.05:
-                continue
-
-            avg_len = series.astype(str).str.len().mean()
-            if avg_len > 50:
-                continue
-
-            top_categories[col] = series.value_counts().head(5)
-
-        insights = {}
-
-        if "revenue" in df.columns:
-            insights["top_10_revenue"] = df.nlargest(10, "revenue")[["title", "revenue"]]
-
-        if "vote_average" in df.columns:
-            insights["top_rated"] = df.nlargest(10, "vote_average")[["title", "vote_average"]]
-
-        if "original_language" in df.columns:
-            insights["language_distribution"] = df["original_language"].value_counts().head(10)
-
-        content = f"# Relatório Silver\n\n"
-        content += f"Data: {now}\n\n"
-
-        content += "## 📊 Data Quality\n"
-        content += dq_table.to_markdown() + "\n\n"
-
-        content += "## 📈 Estatísticas Numéricas\n"
-        content += numeric_stats.to_markdown() + "\n\n"
-
-        content += "## 🔤 Top Categorias\n"
-        for col, values in top_categories.items():
-            content += f"### {col}\n"
-            content += values.to_markdown() + "\n\n"
-
-        content += "## Insights de Negócio\n"
-
-        if "top_10_revenue" in insights:
-            content += "### Top 10 por Receita\n"
-            content += insights["top_10_revenue"].to_markdown(index=False) + "\n\n"
-
-        if "top_rated" in insights:
-            content += "### Top Avaliados\n"
-            content += insights["top_rated"].to_markdown(index=False) + "\n\n"
-
-        if "language_distribution" in insights:
-            content += "### Distribuição por Idioma\n"
-            content += insights["language_distribution"].to_markdown() + "\n\n"
-
-        report_file = report_path / "silver_report.md"
-
-        with open(report_file, "w", encoding="utf-8") as f:
-            f.write(content)
-
-        self.logger.info(f"Relatório salvo em: {report_file}")
 
     def persist_silver(self, df: pd.DataFrame) -> str:
         self.logger.info(f"Iniciando persist_silver com DF shape: {df.shape}")

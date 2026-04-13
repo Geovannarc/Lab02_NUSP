@@ -1,8 +1,6 @@
 import pandas as pd
 from sqlalchemy import create_engine, text
-from pathlib import Path
 import os
-import tempfile
 
 
 class GoldLayerProcessor:
@@ -15,30 +13,21 @@ class GoldLayerProcessor:
         DB_URL = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
         self.engine = create_engine(DB_URL)
-        base = Path(os.getenv("RAW_OUTPUT_PATH", "/app"))
-        self.silver_path = base / "data" / "silver"
-
-    def _get_latest_silver(self):
-        partitions = sorted(self.silver_path.glob("*/*/*"))
-        return partitions[-1] / "movies.parquet"
 
     def run(self):
-        df = pd.read_parquet(self._get_latest_silver())
+        df = pd.read_sql("SELECT * FROM staging_movies", self.engine)
 
         df = self._prepare(df)
 
         self._merge_dimensions(df)
-        self._merge_fact(df)
 
     def _prepare(self, df):
 
-        df["profit"] = df["revenue"] - df["budget"]
-
         return df[[
             "id", "title", "release_date",
-            "revenue", "budget", "profit",
-            "vote_average", "vote_count", "popularity",
-            "original_language", "status"
+            "revenue", "budget", "original_language",
+            "status", "genres", "production_companies", "production_countries",
+            "vote_average", "vote_count", "popularity"
         ]].rename(columns={"id": "movie_id"})
 
     def _merge_dimensions(self, df):
@@ -46,7 +35,6 @@ class GoldLayerProcessor:
         with self.engine.begin() as conn:
 
             languages = df["original_language"].dropna().unique().tolist()
-
             if languages:
                 conn.execute(
                     text("""
@@ -57,68 +45,54 @@ class GoldLayerProcessor:
                     {"languages": languages}
                 )
 
-            statuses = df["status"].dropna().unique().tolist()
-
-            if statuses:
+            genres = df["genres"].dropna().unique().tolist()
+            if genres:
                 conn.execute(
                     text("""
-                        INSERT INTO dim_status (status)
-                        SELECT UNNEST(:statuses)
-                        ON CONFLICT (status) DO NOTHING
+                        INSERT INTO dim_genre (genre_name)
+                        SELECT UNNEST(:genres)
+                        ON CONFLICT (id) DO NOTHING
                     """),
-                    {"statuses": statuses}
+                    {"genres": genres}
                 )
-    def _merge_fact(self, df):
 
-        with self.engine.begin() as conn:
-
-            dim_language = pd.read_sql("SELECT id, language_code FROM dim_language", conn)
-            dim_status = pd.read_sql("SELECT id, status FROM dim_status", conn)
-
-            df = df.merge(
-                dim_language.rename(columns={"id": "dim_language_id"}),
-                left_on="original_language",
-                right_on="language_code",
-                how="left"
-            )
-
-            df = df.merge(
-                dim_status.rename(columns={"id": "dim_status_id"}),
-                on="status",
-                how="left"
-            )
-
-            fact_df = df[[
-                "movie_id", "title", "release_date",
-                "revenue", "budget", "profit",
-                "vote_average", "vote_count", "popularity",
-                "dim_language_id", "dim_status_id"
-            ]]
-
-            fact_df.to_sql("fact_movies_tmp", conn, if_exists="replace", index=False)
-
-            conn.execute(text("""
-                INSERT INTO fact_movies (
-                    movie_id, title, release_date,
-                    revenue, budget, profit,
-                    vote_average, vote_count, popularity,
-                    dim_language_id, dim_status_id
+            companies = df["production_companies"].dropna().unique().tolist()
+            if companies:
+                conn.execute(
+                    text("""
+                        INSERT INTO dim_production_company (company_name)
+                        SELECT UNNEST(:companies)
+                        ON CONFLICT (id) DO NOTHING
+                    """),
+                    {"companies": companies}
                 )
-                SELECT *
-                FROM fact_movies_tmp
-                ON CONFLICT (movie_id)
-                DO UPDATE SET
-                    title = EXCLUDED.title,
-                    release_date = EXCLUDED.release_date,
-                    revenue = EXCLUDED.revenue,
-                    budget = EXCLUDED.budget,
-                    profit = EXCLUDED.profit,
-                    vote_average = EXCLUDED.vote_average,
-                    vote_count = EXCLUDED.vote_count,
-                    popularity = EXCLUDED.popularity,
-                    dim_language_id = EXCLUDED.dim_language_id,
-                    dim_status_id = EXCLUDED.dim_status_id,
-                    updated_at = CURRENT_TIMESTAMP
-            """))
 
-            conn.execute(text("DROP TABLE fact_movies_tmp"))
+            countries = df["production_countries"].dropna().unique().tolist()
+            if countries:
+                conn.execute(
+                    text("""
+                        INSERT INTO dim_production_country (country_name)
+                        SELECT UNNEST(:countries)
+                        ON CONFLICT (id) DO NOTHING
+                    """),
+                    {"countries": countries}
+                )
+
+            self._populate_bridge(df, "bridge_movie_genre", "dim_genre", "genres", "id", "genre_name")
+            self._populate_bridge(df, "bridge_movie_company", "dim_production_company", "production_companies", "id", "company_name")
+            self._populate_bridge(df, "bridge_movie_country", "dim_production_country", "production_countries", "id", "country_name")
+    
+    def _populate_bridge(self, df: pd.DataFrame, bridge_table: str, dim_table: str, 
+                         source_col: str, dim_id_col: str, dim_name_col: str):
+            """Popula tabelas bridge para relações N:N."""
+            df_exploded = df[['id', source_col]].copy()
+            df_exploded[source_col] = df_exploded[source_col].str.split(',')
+            df_exploded = df_exploded.explode(source_col)
+
+            dim_df = pd.read_sql(f"SELECT {dim_id_col}, {dim_name_col} FROM {dim_table}", self.engine)
+            bridge_df = df_exploded.merge(dim_df, left_on=source_col, right_on=dim_name_col)
+
+            bridge_df = bridge_df[['id', dim_id_col]].rename(columns={'id': 'movie_id'})
+            bridge_df.to_sql(bridge_table, self.engine, if_exists='append', index=False, method='multi', chunksize=1000)
+            print(f"Tabela Bridge {bridge_table} carregada.")
+            
