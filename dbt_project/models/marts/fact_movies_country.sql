@@ -14,7 +14,7 @@ select
     m.release_date,
     m.revenue,
     m.budget,
-    m.profit,
+    {{ get_movie_profit('m') }},
     m.vote_average,
     m.vote_count,
     m.popularity,
@@ -22,4 +22,4 @@ select
     c.country_name
 from bridge_movie_production_country bg
 join movies m on bg.movie_id = m.movie_id
-join country c on bg.production_country_id = c.production_country_id
+join country c on bg.production_country_id = c.id

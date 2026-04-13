@@ -14,7 +14,7 @@ select
     m.release_date,
     m.revenue,
     m.budget,
-    m.profit,
+    {{ get_movie_profit('m') }},
     m.vote_average,
     m.vote_count,
     m.popularity,
@@ -22,4 +22,4 @@ select
     g.genre_name
 from bridge_movie_genre bg
 join movies m on bg.movie_id = m.movie_id
-join genre g on bg.genre_id = g.genre_id
+join genre g on bg.genre_id = g.id
