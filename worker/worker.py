@@ -8,12 +8,12 @@ def main():
     startDateTime = datetime.now()
     print("Worker starting...")
     
-    #raw_processor = RawLayerProcessor()
-    #silver_processor = SilverLayerProcessor()
+    raw_processor = RawLayerProcessor()
+    silver_processor = SilverLayerProcessor()
     gold_processor = GoldLayerProcessor()
 
-    #raw_processor.run()
-    #silver_processor.run()
+    raw_processor.run()
+    silver_processor.run()
     gold_processor.run()
 
     endDateTime = datetime.now()
