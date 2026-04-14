@@ -32,25 +32,25 @@ CREATE TABLE IF NOT EXISTS dim_movies (
 );
 
 CREATE TABLE IF NOT EXISTS bridge_movie_genre (
-    movie_id INT NOT NULL REFERENCES dim_movies(movie_id),
+    movie_id INT NOT NULL REFERENCES dim_movies(id),
     genre_id INT NOT NULL REFERENCES dim_genre(id),
     PRIMARY KEY (movie_id, genre_id)
 );
 
 CREATE TABLE IF NOT EXISTS bridge_movie_language (
-    movie_id INT NOT NULL REFERENCES dim_movies(movie_id),
+    movie_id INT NOT NULL REFERENCES dim_movies(id),
     language_id INT NOT NULL REFERENCES dim_language(id),
     PRIMARY KEY (movie_id, language_id)
 );
 
 CREATE TABLE IF NOT EXISTS bridge_movie_production_company (
-    movie_id INT NOT NULL REFERENCES dim_movies(movie_id),
+    movie_id INT NOT NULL REFERENCES dim_movies(id),
     production_company_id INT NOT NULL REFERENCES dim_production_company(id),
     PRIMARY KEY (movie_id, production_company_id)
 );
 
 CREATE TABLE IF NOT EXISTS bridge_movie_production_country (
-    movie_id INT NOT NULL REFERENCES dim_movies(movie_id),
+    movie_id INT NOT NULL REFERENCES dim_movies(id),
     production_country_id INT NOT NULL REFERENCES dim_production_country(id),
     PRIMARY KEY (movie_id, production_country_id)
 );
