@@ -1,25 +1,25 @@
 CREATE TABLE IF NOT EXISTS dim_language (
-    id SERIAL PRIMARY KEY,
+    language_id SERIAL PRIMARY KEY,
     language_code TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS dim_genre (
-    id SERIAL PRIMARY KEY,
+    genre_id SERIAL PRIMARY KEY,
     genre_name TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS dim_production_company (
-    id SERIAL PRIMARY KEY,
+    company_id SERIAL PRIMARY KEY,
     company_name TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS dim_production_country (
-    id SERIAL PRIMARY KEY,
+    country_id SERIAL PRIMARY KEY,
     country_name TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS dim_movies (
-    id SERIAL PRIMARY KEY,
+    movie_id SERIAL PRIMARY KEY,
     title TEXT NOT NULL,
     release_date DATE,
     revenue NUMERIC,
@@ -32,25 +32,25 @@ CREATE TABLE IF NOT EXISTS dim_movies (
 );
 
 CREATE TABLE IF NOT EXISTS bridge_movie_genre (
-    movie_id INT NOT NULL REFERENCES dim_movies(id),
-    genre_id INT NOT NULL REFERENCES dim_genre(id),
+    movie_id INT NOT NULL REFERENCES dim_movies(movie_id),
+    genre_id INT NOT NULL REFERENCES dim_genre(genre_id),
     PRIMARY KEY (movie_id, genre_id)
 );
 
 CREATE TABLE IF NOT EXISTS bridge_movie_language (
-    movie_id INT NOT NULL REFERENCES dim_movies(id),
-    language_id INT NOT NULL REFERENCES dim_language(id),
+    movie_id INT NOT NULL REFERENCES dim_movies(movie_id),
+    language_id INT NOT NULL REFERENCES dim_language(language_id),
     PRIMARY KEY (movie_id, language_id)
 );
 
 CREATE TABLE IF NOT EXISTS bridge_movie_production_company (
-    movie_id INT NOT NULL REFERENCES dim_movies(id),
-    production_company_id INT NOT NULL REFERENCES dim_production_company(id),
+    movie_id INT NOT NULL REFERENCES dim_movies(movie_id),
+    production_company_id INT NOT NULL REFERENCES dim_production_company(company_id),
     PRIMARY KEY (movie_id, production_company_id)
 );
 
 CREATE TABLE IF NOT EXISTS bridge_movie_production_country (
-    movie_id INT NOT NULL REFERENCES dim_movies(id),
-    production_country_id INT NOT NULL REFERENCES dim_production_country(id),
+    movie_id INT NOT NULL REFERENCES dim_movies(movie_id),
+    production_country_id INT NOT NULL REFERENCES dim_production_country(country_id),
     PRIMARY KEY (movie_id, production_country_id)
 );

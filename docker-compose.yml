@@ -19,7 +19,7 @@ services:
       context: .
       dockerfile: worker/Dockerfile
     container_name: worker
-    restart: always
+    restart: on-failure:2
     depends_on:
       - db
     environment:
